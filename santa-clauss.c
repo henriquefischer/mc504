@@ -157,7 +157,7 @@ static void *elf(void *elf_id) {
 	    CRITICAL(draw,{
             	print_all(set_cardinality(elves_waiting),num_reindeer_waiting, num_elves_being_helped, santa_status);
             });
-            if(NUM_ELVES_PER_GROUP == set_cardinality(elves_waiting)) {
+            if(NUM_ELVES_PER_GROUP <= set_cardinality(elves_waiting)) {
  //               fprintf(stdout, "Elves: waking up santa! \n");
                 sem_signal(santa_sleep_mutex);
             }
