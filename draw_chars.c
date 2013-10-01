@@ -49,13 +49,13 @@
 
 void print_elf(int line) {
     switch (line) {
-        case 0: printf("    +    "); break;
-        case 1: printf("   / \\   "); break;
-        case 2: printf("  /___\\  "); break;
+        case 0: printf(TEXT_YELLOW "    +    " TEXT_DEFAULT ""); break;
+        case 1: printf(TEXT_RED "   / \\" TEXT_DEFAULT "   "); break;
+        case 2: printf(TEXT_RED "  /___\\" TEXT_DEFAULT "  "); break;
         case 3: printf(" ( '7' ) "); break;
         case 4: printf("  `---´  "); break;
-        case 5: printf("  /(_)\\  "); break;
-        case 6: printf("   d b   "); break;
+        case 5: printf("  /" TEXT_GREEN "(_)" TEXT_DEFAULT "\\  "); break;
+        case 6: printf("  " TEXT_RED " d b  " TEXT_DEFAULT " "); break;
     }
 }
 

@@ -6,6 +6,7 @@
 #define TEXT_GREEN "\e[32m"
 #define TEXT_RED "\e[31m"
 #define TEXT_WHITE "\e[37m"
+#define TEXT_YELLOW "\e[33m"
 
 #define HEIGHT_DEER 5
 #define HEIGHT_ELF 7
