@@ -72,7 +72,7 @@ static void help_elves(void) {
 
     
     /* help the elves */
-     CRITICAL(elf_counter_lock, {CRITICAL(elf_mutex, {   CRITICAL(draw,{
+     CRITICAL(elf_counter_lock, {   //CRITICAL(elf_mutex, {
 	num_elves_being_helped = NUM_ELVES_PER_GROUP;
 	
         santa_status = 0;
@@ -80,11 +80,12 @@ static void help_elves(void) {
             elf = set_take(elves_waiting);
             sem_signal_index(&elf_line_set, elf, 1);
         }
-        print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 3, santa_status);
+	CRITICAL(draw,{
+        	print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 3, santa_status);
 	//num_elves_being_helped = 0;
         //santa_status = 1;
         //print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 0, santa_status);
-    })})                });
+    })})                ;
 }
 
 
@@ -129,6 +130,7 @@ static void *santa(void *_) {
 
 static void get_help(const int id) {
 //    fprintf(stdout, "Elf %d got santa's help! \n", id);
+	random_wait_elves("", id);
     CRITICAL(elf_counter_lock,{ CRITICAL(draw, {
         --num_elves_being_helped;
         
@@ -149,15 +151,17 @@ static void *elf(void *elf_id) {
         random_wait_elves("Elf %d is working... \n", id);
 //        fprintf(stdout, "Elf %d needs Santa's help. \n", id);
 
-        sem_wait(elf_counting_sem);
-        CRITICAL(elf_mutex, { CRITICAL(draw,{
+        //sem_wait(elf_counting_sem);
+        CRITICAL(elf_mutex, { 
             set_insert(elves_waiting, id);
-            print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 0, santa_status);
+	    CRITICAL(draw,{
+            	print_all(set_cardinality(elves_waiting),num_reindeer_waiting, num_elves_being_helped, santa_status);
+            });
             if(NUM_ELVES_PER_GROUP == set_cardinality(elves_waiting)) {
  //               fprintf(stdout, "Elves: waking up santa! \n");
                 sem_signal(santa_sleep_mutex);
             }
-        })});
+        });
         
         sem_wait_index(&elf_line_set, id);
         get_help(id);
