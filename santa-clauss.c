@@ -45,6 +45,15 @@ static sem_t draw;
 static int num_elves_being_helped = 0;
 static int santa_status = 0;
 
+static void random_wait_elves(const char *message, const int format_var) {
+    unsigned int i = rand() % (MAX_WAIT_TIME >> 1);
+//    fprintf(stdout, message, format_var);
+    if(OBSERVABLE_DELAYS) {
+        for(; --i; ) /* ho ho ho! */;
+    }
+}
+
+
 static void random_wait(const char *message, const int format_var) {
     unsigned int i = rand() % MAX_WAIT_TIME;
 //    fprintf(stdout, message, format_var);
@@ -59,33 +68,32 @@ static void help_elves(void) {
         
     sem_wait(santa_busy_mutex);
     
-    CRITICAL(elf_counter_lock, {
-        CRITICAL(draw,{
-            num_elves_being_helped = NUM_ELVES_PER_GROUP;
-            santa_status = 0;
-            print_all(set_cardinality(elves_waiting)-3,num_reindeer_waiting, 3, santa_status);
-            
-            }
-        )
-    });
+   
+
     
     /* help the elves */
-    CRITICAL(elf_mutex, {   CRITICAL(draw,{
-        
+     CRITICAL(elf_counter_lock, {CRITICAL(elf_mutex, {   CRITICAL(draw,{
+	num_elves_being_helped = NUM_ELVES_PER_GROUP;
+	
+        santa_status = 0;
         for(i = 0; i < NUM_ELVES_PER_GROUP; ++i) {
             elf = set_take(elves_waiting);
             sem_signal_index(&elf_line_set, elf, 1);
         }
-        santa_status = 1;
-        print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 0, santa_status);
-    })});
+        //print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 3, santa_status);
+	//num_elves_being_helped = 0;
+        //santa_status = 1;
+        //print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 0, santa_status);
+    })})                });
 }
 
 
 static void prepare_sleigh(void) {
     sem_wait(santa_busy_mutex);
 //    fprintf(stdout, "Santa: preparing the sleigh. \n");
-    sem_signal_ntimes(reindeer_counting_sem, NUM_REINDEER);
+    CRITICAL(draw, {
+    	sem_signal_ntimes(reindeer_counting_sem, NUM_REINDEER);
+    });
 }
 
 
@@ -101,10 +109,11 @@ static void *santa(void *_) {
         })});
         sem_wait(santa_sleep_mutex);
         
-//        fprintf(stdout, "Santa: I'm up, I'm up! Whaddya want? \n");
-        
+        CRITICAL(santa_busy_mutex, { CRITICAL(draw,{
+            print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 0, 0);
+            santa_status = 0;
+        })});
         if(NUM_REINDEER <= num_reindeer_waiting) {
-            
             num_reindeer_waiting = NUM_REINDEER;
             prepare_sleigh();
             
@@ -126,7 +135,10 @@ static void get_help(const int id) {
         if(!num_elves_being_helped) {
             sem_signal(santa_busy_mutex);
             sem_signal_ntimes(elf_counting_sem, NUM_ELVES_PER_GROUP);
-        }
+	    print_all(set_cardinality(elves_waiting),num_reindeer_waiting, num_elves_being_helped, santa_status);
+        } else {
+		print_all(set_cardinality(elves_waiting),num_reindeer_waiting, num_elves_being_helped, santa_status);
+	}
     })});
 }
 
@@ -134,13 +146,13 @@ static void *elf(void *elf_id) {
     const int id = *((int *) elf_id);
     
     while(1) {
-        random_wait("Elf %d is working... \n", id);
+        random_wait_elves("Elf %d is working... \n", id);
 //        fprintf(stdout, "Elf %d needs Santa's help. \n", id);
 
         sem_wait(elf_counting_sem);
         CRITICAL(elf_mutex, { CRITICAL(draw,{
             set_insert(elves_waiting, id);
-            print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 0, 0);
+            print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 0, santa_status);
             if(NUM_ELVES_PER_GROUP == set_cardinality(elves_waiting)) {
  //               fprintf(stdout, "Elves: waking up santa! \n");
                 sem_signal(santa_sleep_mutex);
@@ -155,9 +167,6 @@ static void *elf(void *elf_id) {
 }
 
 
-static void get_hitched(const int id) {
-    fprintf(stdout, "Reindeer %d is getting hitched to the sleigh! \n", id);
-}
 static void *reindeer(void *reindeer_id) {
     const int id = *((int *) reindeer_id);
     
@@ -165,10 +174,11 @@ static void *reindeer(void *reindeer_id) {
     
     CRITICAL(reindeer_counter_lock, {
         ++num_reindeer_waiting;
+        CRITICAL(draw,  {
+            print_all(set_cardinality(elves_waiting),num_reindeer_waiting, num_elves_being_helped, santa_status);
+        });
     });
-    CRITICAL(draw,  {
-    print_all(set_cardinality(elves_waiting),num_reindeer_waiting, num_elves_being_helped, santa_status);
-    });
+    
     
     if(NUM_REINDEER <= num_reindeer_waiting) {
 //        fprintf(stdout, "Reindeer %d: I'm the last one; I'll get santa!\n", id);
@@ -178,13 +188,13 @@ static void *reindeer(void *reindeer_id) {
     sem_wait(reindeer_counting_sem);
     
     CRITICAL(reindeer_counter_lock, {
-        
-        get_hitched(id);
         --(num_reindeer_waiting);
         
         if(0 == num_reindeer_waiting) {
-            fprintf(stdout, "Santa: Ho ho ho! Off to deliver presents! \n");
-            exit(EXIT_SUCCESS);
+	    CRITICAL(draw, {
+            	fprintf(stdout, "Santa: Ho ho ho! Off to deliver presents! \n");
+            	exit(EXIT_SUCCESS);
+	    });
         }
     });
     
