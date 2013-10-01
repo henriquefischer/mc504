@@ -64,7 +64,6 @@ void set_insert(set_t set, const int item) {
     assert(item >= 0 && item < set->num_slots);
     
     CRITICAL(set->write_lock, {
-        /* add the item into the set */
         set->slots[item] = 1;
         if(set->cardinality < set->num_slots) {
             ++(set->cardinality);
@@ -77,7 +76,6 @@ int set_take(set_t set) {
     assert(NULL != set);
     
     CRITICAL(set->write_lock, {
-        /* find a random item in the set */
         for(item = rand() % set->num_slots;
             !set->slots[item];
             item = rand() % set->num_slots);
@@ -92,14 +90,7 @@ int set_take(set_t set) {
 int set_cardinality(const set_t set) {
     return set->cardinality;
 }
-/**
- * Fill a semaphore set. Prints an error if
- *
- * Params: - Pointer to the semaphore set to fill
- *         - The number of semaphores to fill the set with.
- *
- * Side-Effects: If this function fails then the program will be exited.
- */
+
 void sem_fill_set(sem_set_t *set, const int num_semaphores) {
     
     assert(NULL != set);
@@ -118,17 +109,6 @@ void sem_fill_set(sem_set_t *set, const int num_semaphores) {
     }
 }
 
-/**
- * Empty a set of semaphores.
- *
- * Params: - Pointer to a filled semaphore set.
- *
- * Note: emptying a set doesn't change the state of any previously unpacked
- *       semaphores from the set. Using these semaphores after the set has
- *       been emptied results in undefined behavior.
- *
- * Side-Effects: If this function fails then the program will be exited.
- */
 void sem_empty_set(sem_set_t *set) {
     my_semun_t _;
     assert(NULL != set);
@@ -142,17 +122,6 @@ void sem_empty_set(sem_set_t *set) {
     set->num_semaphores = -1;
 }
 
-/**
- * Unpack a semaphore set into individual semaphores that can then be
- * initialized.
- *
- * Params: - Pointer to the semaphore set to unpack
- *         - Variable number of semaphores to unpack from the set; the number
- *           of arguments expected is the same as the number of semaphores in
- *           the set.
- *
- * Side-Effects: If this function fails then the program will be exited.
- */
 void sem_unpack_set(sem_set_t *set, sem_t *sem1, ...) {
     va_list sems;
     sem_t *curr_sem;
@@ -174,15 +143,6 @@ void sem_unpack_set(sem_set_t *set, sem_t *sem1, ...) {
     va_end(sems);
 }
 
-/**
- * Initialize a given semaphore to some value.
- *
- * Params: - Pointer to semaphore set
- *         - Index into the semaphore set of the semaphore we're interested in
- *         - Value to initialize the semaphore
- *
- * Side-Effects: If this function fails then the program will be exited.
- */
 void sem_init_index(sem_set_t *set, const int sem_index, const int value) {
     my_semun_t arg;
     
@@ -196,14 +156,6 @@ void sem_init_index(sem_set_t *set, const int sem_index, const int value) {
     }
 }
 
-/**
- * Initialize all semaphores within a set.
- *
- * Params: - Pointer to semaphore set.
- *         - Value which will be assigned to all semaphores in the above set.
- *
- * Side-Effects: If this function fails then the program will be exited.
- */
 void sem_init_all(sem_set_t *set, const int value) {
     int i;
     unsigned short *sem_ids;
@@ -238,14 +190,6 @@ void sem_init_all(sem_set_t *set, const int value) {
     }
 }
 
-/**
- * Wait until a given semaphore has cleared.
- *
- * Params: - Pointer to semaphore set to which the indexed semaphore belongs.
- *         - Index of semaphore to wait on.
- *
- * Side-Effects: If this function fails then the program will be exited.
- */
 void sem_wait_index(sem_set_t *set, const int sem_index) {
     my_sembuf_t op;
     
@@ -262,21 +206,10 @@ void sem_wait_index(sem_set_t *set, const int sem_index) {
     }
 }
 
-/**
- * Signal a semaphore num_signals times.
- *
- * Params: - Pointer to semaphore set
- *         - Index of semaphore within that set
- *         - Number of times to signal that semaphore. This must be a positive
- *           integer.
- *  
- * Side-Effects: If this function fails then the program will be exited.
- */
 void sem_signal_index(sem_set_t *set,
                       const int sem_index,
                       const int num_signals) {
-    my_sembuf_t op;
-    
+    my_sembuf_t op;    
     assert(NULL != set);
     assert(num_signals > 0);
     assert(0 <= sem_index && sem_index < set->num_semaphores);

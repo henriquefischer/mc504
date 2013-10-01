@@ -17,18 +17,18 @@
 #include "bibli.h"
 #include "draw_chars.h"
 
+// Defines importantes
 #define NUM_REINDEER 9
 #define NUM_ELVES 9
-#define NUM_ELVES_PER_GROUP 3
+#define NUM_ELVES_PER_GROUP 3 // Elfos ao mesmo tempo no papai noel
 
-/* should "waits" take up time? */
 #define OBSERVABLE_DELAYS 1
 
-/* max wait time (in approx. cycles) if OBSERVABLE_DELAYS is set */
 #define MAX_WAIT_TIME (INT_MAX >> 4)
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+// Variaveis globais
 static sem_set_t elf_line_set;
 static sem_set_t sem_set;
 static sem_t santa_busy_mutex;
@@ -41,40 +41,32 @@ static sem_t elf_counting_sem;
 static sem_t elf_mutex;
 static sem_t elf_counter_lock;
 static sem_t draw;
-
 static int num_elves_being_helped = 0;
 static int santa_status = 0;
 
+// Random especial de espera
 static void random_wait_elves(const char *message, const int format_var) {
     unsigned int i = rand() % (MAX_WAIT_TIME / 8);
-//    fprintf(stdout, message, format_var);
     if(OBSERVABLE_DELAYS) {
-        for(; --i; ) /* ho ho ho! */;
+        for(; --i; );
     }
 }
 
 
 static void random_wait(const char *message, const int format_var) {
     unsigned int i = (rand() * 16) % MAX_WAIT_TIME;
-//    fprintf(stdout, message, format_var);
     if(OBSERVABLE_DELAYS) {
-        for(; --i; ) /* ho ho ho! */;
+        for(; --i; );
     }
 }
 
 static void help_elves(void) {
     int i;
     int elf;
-        
-    sem_wait(santa_busy_mutex);
-    
-   
-
-    
+    sem_wait(santa_busy_mutex);    
     /* help the elves */
-     CRITICAL(elf_counter_lock, {   //CRITICAL(elf_mutex, {
+     CRITICAL(elf_counter_lock, {
 	num_elves_being_helped = NUM_ELVES_PER_GROUP;
-	
         santa_status = 0;
         for(i = 0; i < NUM_ELVES_PER_GROUP; ++i) {
             elf = set_take(elves_waiting);
@@ -82,16 +74,12 @@ static void help_elves(void) {
         }
 	CRITICAL(draw,{
         	print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 3, santa_status);
-	//num_elves_being_helped = 0;
-        //santa_status = 1;
-        //print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 0, santa_status);
-    })})                ;
+    })});
 }
 
 
 static void prepare_sleigh(void) {
     sem_wait(santa_busy_mutex);
-//    fprintf(stdout, "Santa: preparing the sleigh. \n");
     CRITICAL(draw, {
     	sem_signal_ntimes(reindeer_counting_sem, NUM_REINDEER);
     });
@@ -129,7 +117,6 @@ static void *santa(void *_) {
 }
 
 static void get_help(const int id) {
-//    fprintf(stdout, "Elf %d got santa's help! \n", id);
 	random_wait_elves("", id);
     CRITICAL(elf_counter_lock,{ CRITICAL(draw, {
         --num_elves_being_helped;
@@ -149,16 +136,12 @@ static void *elf(void *elf_id) {
     
     while(1) {
         random_wait_elves("Elf %d is working... \n", id);
-//        fprintf(stdout, "Elf %d needs Santa's help. \n", id);
-
-        //sem_wait(elf_counting_sem);
         CRITICAL(elf_mutex, { 
             set_insert(elves_waiting, id);
 	    CRITICAL(draw,{
             	print_all(set_cardinality(elves_waiting),num_reindeer_waiting, num_elves_being_helped, santa_status);
             });
             if(NUM_ELVES_PER_GROUP <= set_cardinality(elves_waiting)) {
- //               fprintf(stdout, "Elves: waking up santa! \n");
                 sem_signal(santa_sleep_mutex);
             }
         });
@@ -185,7 +168,6 @@ static void *reindeer(void *reindeer_id) {
     
     
     if(NUM_REINDEER <= num_reindeer_waiting) {
-//        fprintf(stdout, "Reindeer %d: I'm the last one; I'll get santa!\n", id);
         sem_signal(santa_sleep_mutex);
     }
     
@@ -221,7 +203,6 @@ static void free_resources(void) {
     static int resources_freed = 0;
     if(!resources_freed) {
         resources_freed = 1;
-//        fprintf(stdout,"\n.. And that year was a Merry Christmas indeed!\n\n");
         sem_empty_set(&sem_set);
         sem_empty_set(&elf_line_set);
         set_exit_free(elves_waiting);
@@ -239,8 +220,6 @@ static void launch_threads(void) {
     
     int ids[MAX(NUM_ELVES, NUM_REINDEER)];
     int i;
-    
-    /* fill up the ids */
     for(i = 0; i < MAX(NUM_ELVES, NUM_REINDEER); ++i) {
         ids[i] = i;
     }
