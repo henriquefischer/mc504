@@ -153,5 +153,5 @@ void print_all(int num_elves, int num_reindeers, int num_elves_help, int santa_s
     print_deer_line(num_reindeers);
     print_santa_room(santa_status, num_elves_help);
     print_elf_line(num_elves);
-    for(i = 0;i<500000000;i++);
+    for(i = 0;i<100000000;i++);
 }

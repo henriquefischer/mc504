@@ -46,7 +46,7 @@ static int num_elves_being_helped = 0;
 static int santa_status = 0;
 
 static void random_wait_elves(const char *message, const int format_var) {
-    unsigned int i = rand() % (MAX_WAIT_TIME >> 1);
+    unsigned int i = rand() % (MAX_WAIT_TIME / 8);
 //    fprintf(stdout, message, format_var);
     if(OBSERVABLE_DELAYS) {
         for(; --i; ) /* ho ho ho! */;
@@ -55,7 +55,7 @@ static void random_wait_elves(const char *message, const int format_var) {
 
 
 static void random_wait(const char *message, const int format_var) {
-    unsigned int i = rand() % MAX_WAIT_TIME;
+    unsigned int i = (rand() * 16) % MAX_WAIT_TIME;
 //    fprintf(stdout, message, format_var);
     if(OBSERVABLE_DELAYS) {
         for(; --i; ) /* ho ho ho! */;
@@ -80,7 +80,7 @@ static void help_elves(void) {
             elf = set_take(elves_waiting);
             sem_signal_index(&elf_line_set, elf, 1);
         }
-        //print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 3, santa_status);
+        print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 3, santa_status);
 	//num_elves_being_helped = 0;
         //santa_status = 1;
         //print_all(set_cardinality(elves_waiting),num_reindeer_waiting, 0, santa_status);
